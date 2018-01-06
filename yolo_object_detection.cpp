@@ -27,7 +27,7 @@ static const char* params =
 "{ camera_device  | 0     | camera device number}"
 "{ source         |       | video or image for detection}"
 "{ style          | box   | box or line style draw }"
-"{ min_confidence | 0.24  | min confidence      }"
+"{ min_confidence | 0.3  | min confidence      }"
 "{ class_names    |       | File with class names, [PATH-TO-DARKNET]/data/coco.names }";
 
 int main(int argc, char** argv)
@@ -43,6 +43,13 @@ int main(int argc, char** argv)
 
     String modelConfiguration = parser.get<String>("cfg");
     String modelBinary = parser.get<String>("model");
+    String image_source = parser.get<String>("source");
+    String class_name_label = parser.get<String>("class_names");
+    class_name_label = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/yolo/yolo-voc/voc.names";
+    image_source = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/video_3.mp4";
+    modelConfiguration = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/yolo/yolo-voc/yolo-voc.cfg";
+    modelBinary = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/yolo/yolo-voc/yolo-voc-544.weights";
+    String output_video_path = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/videoOut1.mp4";
 
     //! [Initialize network]
     dnn::Net net = readNetFromDarknet(modelConfiguration, modelBinary);
@@ -59,7 +66,8 @@ int main(int argc, char** argv)
     }
 
     VideoCapture cap;
-    if (parser.get<String>("source").empty())
+
+    if (image_source.empty())
     {
         int cameraDevice = parser.get<int>("camera_device");
         cap = VideoCapture(cameraDevice);
@@ -71,7 +79,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        cap.open(parser.get<String>("source"));
+        cap.open(image_source);
         if(!cap.isOpened())
         {
             cout << "Couldn't open image or video: " << parser.get<String>("video") << endl;
@@ -80,7 +88,7 @@ int main(int argc, char** argv)
     }
 
     vector<String> classNamesVec;
-    ifstream classNamesFile(parser.get<String>("class_names").c_str());
+    ifstream classNamesFile(class_name_label.c_str());
     if (classNamesFile.is_open())
     {
         string className = "";
@@ -89,12 +97,29 @@ int main(int argc, char** argv)
     }
 
     String object_roi_style = parser.get<String>("style");
-
+    /*
+     * CV_FOURCC('P', 'I', 'M', '1') = MPEG-1 codec
+     * CV_FOURCC('M', 'J', 'P', 'G') = motion-jpeg codec
+     * CV_FOURCC('M', 'P', '4', '2') = MPEG-4.2 codec
+     * CV_FOURCC('D', 'I', 'V', '3') = MPEG-4.3 codec
+     * CV_FOURCC('D', 'I', 'V', 'X') = MPEG-4 codec
+     * CV_FOURCC('U', '2', '6', '3') = H263 codec
+     * CV_FOURCC('I', '2', '6', '3') = H263I codec
+     * CV_FOURCC('F', 'L', 'V', '1') = FLV1 codec
+     */
+    double rate = cap.get(CV_CAP_PROP_FPS);
+    int frameH = (int) cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+    int frameW = (int) cap.get(CV_CAP_PROP_FRAME_WIDTH);
+    int numFrames = (int) cap.get(CV_CAP_PROP_FRAME_COUNT);
+    //frameH = frameW = 544;
+    VideoWriter writer(output_video_path, CV_FOURCC('D', 'I', 'V', 'X'), rate, Size(frameW, frameH));
+    int index_frame = 0;
     for(;;)
     {
         Mat frame;
         cap >> frame; // get a new frame from camera/video or read image
-
+        //resize(frame, frame, Size(frameW, frameH));
+        index_frame++;
         if (frame.empty())
         {
             waitKey();
@@ -119,7 +144,7 @@ int main(int argc, char** argv)
         vector<double> layersTimings;
         double tick_freq = getTickFrequency();
         double time_ms = net.getPerfProfile(layersTimings) / tick_freq * 1000;
-        putText(frame, format("FPS: %.2f ; time: %.2f ms", 1000.f / time_ms, time_ms),
+        putText(frame, format("FPS: %.2f ; time: %.2f ms; percent: %d%%", 1000.f / time_ms, time_ms, (int)(index_frame*100/numFrames)),
                 Point(20, 20), 0, 0.5, Scalar(0, 0, 255));
 
         float confidenceThreshold = parser.get<float>("min_confidence");
@@ -164,10 +189,10 @@ int main(int argc, char** argv)
                         FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));
             }
         }
-
+        writer << frame;
         imshow("YOLO: Detections", frame);
-        if (waitKey(1) >= 0) break;
+        if (waitKey(33) >= 0) break;
     }
-
+    writer.release();
     return 0;
 } // main
