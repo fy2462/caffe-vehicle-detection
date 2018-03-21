@@ -45,11 +45,11 @@ int main(int argc, char** argv)
     String modelBinary = parser.get<String>("model");
     String image_source = parser.get<String>("source");
     String class_name_label = parser.get<String>("class_names");
-    class_name_label = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/yolo/yolo-voc/voc.names";
-    image_source = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/video_3.mp4";
-    modelConfiguration = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/yolo/yolo-voc/yolo-voc.cfg";
-    modelBinary = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/yolo/yolo-voc/yolo-voc-544.weights";
-    String output_video_path = "/Users/fengyan04/Github/faster-rcnn-for-vehicle/videoOut1.mp4";
+    class_name_label = "/Users/fengyan04/Github/yolo-detection/yolo/yolo-voc/voc.names";
+    //image_source = "/Users/fengyan04/Github/yolo-detection/video_3.mp4";
+    modelConfiguration = "/Users/fengyan04/Github/yolo-detection/yolo/yolo-voc/yolo-voc.cfg";
+    modelBinary = "/Users/fengyan04/Github/yolo-detection/yolo/yolo-voc/yolo-voc-544.weights";
+    String output_video_path = "/Users/fengyan04/Github/yolo-detection/videoOut1.mp4";
 
     //! [Initialize network]
     dnn::Net net = readNetFromDarknet(modelConfiguration, modelBinary);
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
     int frameW = (int) cap.get(CV_CAP_PROP_FRAME_WIDTH);
     int numFrames = (int) cap.get(CV_CAP_PROP_FRAME_COUNT);
     //frameH = frameW = 544;
-    VideoWriter writer(output_video_path, CV_FOURCC('D', 'I', 'V', 'X'), rate, Size(frameW, frameH));
+    //VideoWriter writer(output_video_path, CV_FOURCC('D', 'I', 'V', 'X'), rate, Size(frameW, frameH));
     int index_frame = 0;
     for(;;)
     {
@@ -144,8 +144,8 @@ int main(int argc, char** argv)
         vector<double> layersTimings;
         double tick_freq = getTickFrequency();
         double time_ms = net.getPerfProfile(layersTimings) / tick_freq * 1000;
-        putText(frame, format("FPS: %.2f ; time: %.2f ms; percent: %d%%", 1000.f / time_ms, time_ms, (int)(index_frame*100/numFrames)),
-                Point(20, 20), 0, 0.5, Scalar(0, 0, 255));
+       /* putText(frame, format("FPS: %.2f ; time: %.2f ms; percent: %d%%", 1000.f / time_ms, time_ms, (int)(index_frame*100/numFrames)),
+                Point(20, 20), 0, 0.5, Scalar(0, 0, 255));*/
 
         float confidenceThreshold = parser.get<float>("min_confidence");
         for (int i = 0; i < detectionMat.rows; i++)
@@ -189,10 +189,10 @@ int main(int argc, char** argv)
                         FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));
             }
         }
-        writer << frame;
+        //writer << frame;
         imshow("YOLO: Detections", frame);
         if (waitKey(33) >= 0) break;
     }
-    writer.release();
+    //writer.release();
     return 0;
 } // main
